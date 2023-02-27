@@ -60,7 +60,7 @@ To calculate the transverse moment of inertia, we need to know the position of t
 
 """
 
-data = pd.read_excel('rayquaza data.xlsx', header=None, usecols="A", nrows=11)
+data = pd.read_excel('rocket_data.xlsx', header=None, usecols="A", nrows=11)
 
 rmas = data.loc[0][0] #rocket mass without motor
 rcg = data.loc[1][0] #rocket CG without motor
@@ -90,11 +90,11 @@ awinz = float(input('Enter mean wind speed in east direction: '))
 tur_inten = float(input('Enter turbulent intensity in perecentage in the atmosphere: '))
 
 #Importing rocket's aerodynamic data
-data1 = pd.read_excel('rayquaza aero data.xlsx', sheet_name=0) #Aerodynamic data without airbrakes
-data2 = pd.read_excel('rayquaza aero data.xlsx', sheet_name=1) #Aerodynamic data with airbrakes
+data1 = pd.read_excel('aero_data.xlsx', sheet_name=0) #Aerodynamic data without airbrakes
+data2 = pd.read_excel('aero_data.xlsx', sheet_name=1) #Aerodynamic data with airbrakes
 
 #Importing data of motor and its thrust-time curve is imported from an excel file
-motor_data = pd.read_excel('M3400 WT.xlsx')
+motor_data = pd.read_excel('motor_data.xlsx')
 length = motor_data.iloc[0, 1]  # motor length
 odia = motor_data.iloc[1, 1]  # motor outer diameter
 wetmass = motor_data.iloc[2, 1]  # motor wet mass 
@@ -108,6 +108,7 @@ time = np.zeros((16, 1))
 for n in range(8, 23):
     thrust[n-8, 0] = motor_data.iloc[n, 1]
     time[n-8, 0] = motor_data.iloc[n, 0]
+
 
 
 """
