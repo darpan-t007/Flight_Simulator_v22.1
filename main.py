@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import math
-from Density_Temp import density_n_temp
+from density_n_temp import density_n_temp
 from Predictor import predictor
 from Thrust_Misc import thrust_n_other_things
 """
