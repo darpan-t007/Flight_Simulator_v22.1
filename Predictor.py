@@ -1,3 +1,4 @@
+import numpy as np
 def predictor (aerodata, accelerationx, velocityx, displacementx, currentmass, refArea, temp):
     dt = 0.01
     accel = np.zeros(100)

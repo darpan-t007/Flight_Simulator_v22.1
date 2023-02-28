@@ -1,7 +1,9 @@
 import numpy as np
 import pandas as pd
 import math
-
+from Density_Temp import density_n_temp
+from Predictor import predictor
+from Thrust_Misc import thrust_n_other_things
 """
 - Main function to initialize, calculate, integrate everything and plot desired results
 - Axis System is right hand with X upwards, Y out of the screen and Z going right
@@ -134,9 +136,9 @@ while Xe[counter1] >= 0 or timer < time[0]:
 	CG[counter1] = ((rmas * rcg) + (mmass * (mpos - (length + nozlen) + mcg))) / Mass[counter1]  # net centre of gravity
 	Ixx[counter1] = (AMI) + (mIx)  # net axial moment of inertia
 	Iyy[counter1] = TMI + (rmas * (CG[counter1] - (rcg))**2) + (mIy) + (mmass * (CG[counter1] - (mpos - length + mcg))**2)  # net transeverse moment of inertia..rocket is assumed to be symmetric about xy and xz plane mi about y and z are same
-
+"""
 # condition for motor burn out
-	if timer[counter1] > time[end, 1]:
+	if timer[counter1] > time[-1, 1]:
 	    mphase = 0
 	    
 	if phase == 0:  # condition for rocket to be in ascent phase
@@ -218,7 +220,7 @@ while Xe[counter1] >= 0 or timer < time[0]:
 	vtrajectory[counter1][0] = Xe[counter1]
 	vtrajectory[counter1][1] = Ye[counter1]
 	vtrajectory[counter1][2] = Ze[counter1]
-"""
+
 	# Parachute Phase
 	else:
 	    pdia = 0.95 # Parachute diameter in reefed condition
