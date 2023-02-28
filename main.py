@@ -150,23 +150,29 @@ while Xe[counter1] >= 0 or timer < time[0]:
 	    # condition to ensure motor has burnt out, rocket is in ascent phase and the speed is below the speed allowed by structural limits (needs to be found from structural sims)
 	    
 	    if flag == 0:
-		# prediction function call to predict apogee based on current altitude, vertical speed
-		prediction[counter1] = predictor(data1, acceleration[counter1], u[counter1], Xe[counter1], Mass[counter1], Aref, mytemp)
+	    	# prediction function call to predict apogee based on current altitude, vertical speed
+	    	prediction[counter1] = predictor(data1, acceleration[counter1], u[counter1], Xe[counter1], Mass[counter1], Aref, mytemp)
+	    
 	    elif flag == 1:
-		prediction[counter1] = predictor(data2, acceleration[counter1], u[counter1], Xe[counter1], Mass[counter1], Aref, mytemp)
+	    	prediction[counter1] = predictor(data2, acceleration[counter1], u[counter1], Xe[counter1], Mass[counter1], Aref, mytemp)
+		
 
 	if prediction[counter1] > desired:  # Desired Apogee
-	    if timer[counter1] - delaytracker >= delay:  # check for mechanical delay
-		flag = 1
-		delaytracker = timer[counter1]
+	    if timer[counter1] - delaytracker >= delay: # check for mechanical delay
+	    	flag = 1
+	    	delaytracker = timer[counter1] 
+		 
+		
 	elif prediction[counter1] < desired:  # Desired Apogee
 	    if timer[counter1] - delaytracker >= delay:  # check for mechanical delay
-		flag = 0
-		delaytracker = timer[counter1]
+	    	flag = 0
+	    	delaytracker = timer[counter1]
+		
+		
 	else:
-	    prediction[counter1] = 0
-	    
-	    
+		prediction[counter1] = 0
+
+
 	if flag == 1:
 	    state[counter1] = 2000  # Registering state of Air Brakes as open
 	else:
@@ -190,18 +196,19 @@ while Xe[counter1] >= 0 or timer < time[0]:
 	    Mz = -Mz * np.sign(sidey) * np.cos(psi[counter1])
 	    
 	    if Xe[counter1] > 5.18:  # condition for launch rod clearance
-		CNY = -(Cn_yaw[counter1] * np.sign(psi[counter1])) - (Cd[counter1] * np.sin(psi[counter1])) - (Cn_alpha[counter1] * np.arctan((q[counter1] * momentarm) / u[counter1]))  # net Cn yaw
-		CNP = -(Cn_pitch[counter1] * np.sign(theta[counter1])) - (Cd[counter1] * np.sin(theta[counter1])) - (Cn_alpha[counter1] * np.arctan((p[counter1] * momentarm) / u[counter1]))  # net Cn pitch
-		C_roll[counter1] = -2 * np.pi * np.arctan((1.5 * mrad * r[counter1]) / u[counter1]) * np.sign(r[counter1])  # net roll moment coefficient
+	    	CNY = -(Cn_yaw[counter1] * np.sign(psi[counter1])) - (Cd[counter1] * np.sin(psi[counter1])) - (Cn_alpha[counter1] * np.arctan((q[counter1] * momentarm) / u[counter1]))  # net Cn yaw
+	    	CNP = -(Cn_pitch[counter1] * np.sign(theta[counter1])) - (Cd[counter1] * np.sin(theta[counter1])) - (Cn_alpha[counter1] * np.arctan((p[counter1] * momentarm) / u[counter1]))  # net Cn pitch
+	    	C_roll[counter1] = -2 * np.pi * np.arctan((1.5 * mrad * r[counter1]) / u[counter1]) * np.sign(r[counter1])  # net roll moment coefficient
+		
 	    else:
-		CNY = 0
-		CNP = 0
-		C_roll[counter1] = 0
-		My = 0
-		Mz = 0
-		Fy = 0
-		Fz = 0
-
+	    	CNY = 0
+	    	CNP = 0
+	    	C_roll[counter1] = 0
+	    	My = 0
+	    	Mz = 0
+	    	Fy = 0
+	    	Fz = 0
+		
 	drag = 0.5 * Cd[counter1] * u[counter1]**2 * mydensity * Aref # Calculating drag force
 	Yaw = (0.5 * CNY * mydensity * u[counter1]**2 * Aref * momentarm) + Mz # Calculating net yaw moment
 	Pitch = (0.5 * CNP * mydensity * u[counter1]**2 * Aref * momentarm) + My # Calculating net pitch moment
@@ -211,7 +218,7 @@ while Xe[counter1] >= 0 or timer < time[0]:
 	vtrajectory[counter1][0] = Xe[counter1]
 	vtrajectory[counter1][1] = Ye[counter1]
 	vtrajectory[counter1][2] = Ze[counter1]
-
+"""
 	# Parachute Phase
 	else:
 	    pdia = 0.95 # Parachute diameter in reefed condition
@@ -229,7 +236,7 @@ while Xe[counter1] >= 0 or timer < time[0]:
 	theta[counter1] = 0
 	phase = 1
 	flag = 0
-
+"""
 #Add MATPLOTLIB here
 """
 This is just to test the code
