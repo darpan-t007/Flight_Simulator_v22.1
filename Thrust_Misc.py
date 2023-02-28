@@ -1,4 +1,6 @@
 import numpy as np
+from scipy import interpolate
+
 def thrust_n_other_things(timer, length, odia, wetmass, drymass, nozmass, nozlen, time, thrust):
     # Ix and Iy are axial and transverse mi respectively
     if timer > time[-1]:  # motor has burnt out
@@ -12,7 +14,12 @@ def thrust_n_other_things(timer, length, odia, wetmass, drymass, nozmass, nozlen
         Iy2 = (0.5 * drymass * (odia / 2) ** 2) + ((1 / 12) * drymass * length ** 2) + (drymass * (cg - (length / 2)) ** 2)  # mi of casing
         Iy3 = ((1 / 12) * nozmass * (((3 / 4) * (odia ** 2)) + nozlen ** 2)) + (nozmass * (cg - (length + (nozlen / 2))) ** 2)  # mi of nozzle
     else:
-        currentthrust = np.interp(timer, time, thrust, 'spline')  # thrust for the given time
+        idx = np.argsort(time)
+        time_sorted = time[idx]
+        thrust_sorted = thrust[idx]
+        f = interpolate.interp1d(time_sorted, thrust_sorted, kind='cubic')
+        # Interpolate at the desired time
+        currentthrust = f(timer)
         burnrate = (wetmass - drymass) / time[-1]
         dm = burnrate * timer
         mass = (wetmass - dm) + nozmass  # total mass at the given time

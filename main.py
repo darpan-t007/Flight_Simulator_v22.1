@@ -1,11 +1,14 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 import math
 from density_n_temp import density_n_temp
 from Predictor import predictor
 from Thrust_Misc import thrust_n_other_things
 from side_forces import side_forces
 from turbulence_generator import turbulence_generator
+from Aerodynamic import aerodynamic_data
+from Rk4Derivative import Rk4Derivative
 """
 - Main function to initialize, calculate, integrate everything and plot desired results
 - Axis System is right hand with X upwards, Y out of the screen and Z going right
@@ -138,119 +141,133 @@ while Xe[counter1] >= 0 or timer < time[0]:
 	CG[counter1] = ((rmas * rcg) + (mmass * (mpos - (length + nozlen) + mcg))) / Mass[counter1]  # net centre of gravity
 	Ixx[counter1] = (AMI) + (mIx)  # net axial moment of inertia
 	Iyy[counter1] = TMI + (rmas * (CG[counter1] - (rcg))**2) + (mIy) + (mmass * (CG[counter1] - (mpos - length + mcg))**2)  # net transeverse moment of inertia..rocket is assumed to be symmetric about xy and xz plane mi about y and z are same
-"""
-# condition for motor burn out
-	if timer[counter1] > time[-1, 1]:
-	    mphase = 0
-	    
-	if phase == 0:  # condition for rocket to be in ascent phase
-	    # function call to interpolate aerodynamic data(cd,cn,cp etc) based on motor and airbrakes status(variables phase1 and flag)
-	    CP[counter1], Cn_pitch[counter1], Cn_yaw[counter1], Cn_alpha[counter1], Cd[counter1] = aerodynamic_data(data1, data2, mach_no, psi[counter1], theta[counter1], mphase, flag)
 
+	if timer[counter1] > time[-1,0]:  # condition for motor burn out
+		mphase = 0
+	
+	if phase == 0:  # condition for rocket to be in ascent phase
+		# function call to interpolate aerodynamic data(cd,cn,cp etc) based on motor and airbrakes status(variables phase1 and flag)
+		CP[counter1], Cn_pitch[counter1], Cn_yaw[counter1], Cn_alpha[counter1], Cd[counter1] = aerodynamic_data(data1, data2, mach_no, psi[counter1], theta[counter1], mphase, flag)
+	
 	momentarm = CP[counter1] - CG[counter1]
 	Stab_Cal[counter1] = momentarm / (2 * mrad)
 
-	if timer[counter1] > time[-1] and phase == 0 and airbrake == 'y' and u[counter1] < 180:
-	    # condition to ensure motor has burnt out, rocket is in ascent phase and the speed is below the speed allowed by structural limits (needs to be found from structural sims)
-	    
-	    if flag == 0:
-	    	# prediction function call to predict apogee based on current altitude, vertical speed
-	    	prediction[counter1] = predictor(data1, acceleration[counter1], u[counter1], Xe[counter1], Mass[counter1], Aref, mytemp)
-	    
-	    elif flag == 1:
-	    	prediction[counter1] = predictor(data2, acceleration[counter1], u[counter1], Xe[counter1], Mass[counter1], Aref, mytemp)
-		
+	#Air Brakes Prediction Segment
+	if timer[counter1] > time[-1,0] and phase == 0 and airbrake == 'y' and u[counter1] < 180: # condition to ensure motor has burnt out, rocket is in ascent phase and the speed is below the speed allowed by structural limits
+		#prediction function call to predict apogee based on current altitude, vertical speed
+		if flag == 0:
+			prediction[counter1] = predictor(data1, acceleration[counter1], u[counter1], Xe[counter1], Mass[counter1], Aref, mytemp) #data1 has aero data for airbrakes closed
+		elif flag == 1:
+			prediction[counter1] = predictor(data2, acceleration[counter1], u[counter1], Xe[counter1], Mass[counter1], Aref, mytemp) #data2 has aero data for opened airbrakes
 
-	if prediction[counter1] > desired:  # Desired Apogee
-	    if timer[counter1] - delaytracker >= delay: # check for mechanical delay
-	    	flag = 1
-	    	delaytracker = timer[counter1] 
-		 
-		
-	elif prediction[counter1] < desired:  # Desired Apogee
-	    if timer[counter1] - delaytracker >= delay:  # check for mechanical delay
-	    	flag = 0
-	    	delaytracker = timer[counter1]
-		
-		
+		if prediction[counter1] > desired:  # Desired Apogee
+			if timer[counter1] - delaytracker > delay: #check for mechanical delay
+				flag = 1
+				delaytracker = timer[counter1]
+		elif prediction[counter1] < desired:
+			if timer[counter1] - delaytracker > delay:
+				flag = 0
+				delaytracker = timer[counter1]
 	else:
 		prediction[counter1] = 0
-
-
+	
 	if flag == 1:
-	    state[counter1] = 2000  # Registering state of Air Brakes as open
+		state[counter1] = 2000 #Registering state of Air Brakes as open
 	else:
-	    state[counter1] = 500  # Registering state of Air Brakes as closed
-
-
-	# Powered Flight & Coasting Phase
+		state[counter1] = 500 #Registering state of Air Brakes as closed
+	
+	#Determining Phase Of Flight
+    #Powered Flight & Coasting Phase
 	if timer[counter1] < 10 or u[counter1] >= 0:
-	    # generation of side wind gusts and turbulence
-	    sidey, turb_gen = turbulence_generator(counter1, turb_gen, awiny, tur_inten, dt)
-	    sidez, turb_gen = turbulence_generator(counter1, turb_gen, awinz, tur_inten, dt)
-	    
-	    # calculation of disturbing side forces and moments
-	    Fy, Mz = side_forces(sidey, CG[counter1], mydensity, mrad, rlen, fin_details)
-	    Fz, My = side_forces(sidez, CG[counter1], mydensity, mrad, rlen, fin_details)
-	    
-	    # My and Mz are disturbing moment about pitch and yaw respectively
-	    Fy = Fy * np.sign(sidey) * np.cos(psi[counter1])
-	    Fz = Fz * np.sign(sidez) * np.cos(theta[counter1])
-	    My = My * np.sign(sidez) * np.cos(theta[counter1])
-	    Mz = -Mz * np.sign(sidey) * np.cos(psi[counter1])
-	    
-	    if Xe[counter1] > 5.18:  # condition for launch rod clearance
-	    	CNY = -(Cn_yaw[counter1] * np.sign(psi[counter1])) - (Cd[counter1] * np.sin(psi[counter1])) - (Cn_alpha[counter1] * np.arctan((q[counter1] * momentarm) / u[counter1]))  # net Cn yaw
-	    	CNP = -(Cn_pitch[counter1] * np.sign(theta[counter1])) - (Cd[counter1] * np.sin(theta[counter1])) - (Cn_alpha[counter1] * np.arctan((p[counter1] * momentarm) / u[counter1]))  # net Cn pitch
-	    	C_roll[counter1] = -2 * np.pi * np.arctan((1.5 * mrad * r[counter1]) / u[counter1]) * np.sign(r[counter1])  # net roll moment coefficient
-		
-	    else:
-	    	CNY = 0
-	    	CNP = 0
-	    	C_roll[counter1] = 0
-	    	My = 0
-	    	Mz = 0
-	    	Fy = 0
-	    	Fz = 0
-		
-	drag = 0.5 * Cd[counter1] * u[counter1]**2 * mydensity * Aref # Calculating drag force
-	Yaw = (0.5 * CNY * mydensity * u[counter1]**2 * Aref * momentarm) + Mz # Calculating net yaw moment
-	Pitch = (0.5 * CNP * mydensity * u[counter1]**2 * Aref * momentarm) + My # Calculating net pitch moment
-	Roll = C_roll[counter1] * mydensity * u[counter1]**2 * (fin_details[2][0] * (fin_details[0][0] + fin_details[1][0])) * (1.5 * mrad) # calculating net rolling moment
+		sidey, turb_gen = turbulence_generator(counter1, turb_gen, awiny, tur_inten, dt)
+		sidez, turb_gen = turbulence_generator(counter1, turb_gen, awinz, tur_inten, dt)
 
-	# Store x,y,z values for trajectory for ascent
-	vtrajectory[counter1][0] = Xe[counter1]
-	vtrajectory[counter1][1] = Ye[counter1]
-	vtrajectory[counter1][2] = Ze[counter1]
+		Fy, Mz = side_forces(sidey, CG[counter1], mydensity, mrad, rlen, fin_details)
+		Fz, My = side_forces(sidez, CG[counter1], mydensity, mrad, rlen, fin_details)
 
-	# Parachute Phase
+		Fy = Fy * np.sign(sidey) * np.cos(psi[counter1])
+		Fz = Fz * np.sign(sidez) * np.cos(theta[counter1])
+		My = My * np.sign(sidez) * np.cos(theta[counter1])
+		Mz = -Mz * np.sign(sidey) * np.cos(psi[counter1])
+
+		if Xe[counter1] > 5.18: #condition for launch rod clearance
+			CNY = -(Cn_yaw[counter1]*np.sign(psi[counter1])) - (Cd[counter1]*np.sin(psi[counter1])) - (Cn_alpha[counter1]*np.arctan((q[counter1]*momentarm)/u[counter1])) # net Cn yaw
+			CNP = -(Cn_pitch[counter1]*np.sign(theta[counter1])) - (Cd[counter1]*np.sin(theta[counter1])) - (Cn_alpha[counter1]*np.arctan((p[counter1]*momentarm)/u[counter1])) # net Cn pitch
+			C_roll[counter1] = -2*np.pi*np.arctan((1.5*mrad*r[counter1])/u[counter1])*np.sign(r[counter1]) # net roll moment coefficient
+		
+		else:
+			CNY = 0
+			CNP = 0
+			C_roll[counter1] = 0
+			My = 0
+			Mz = 0
+			Fy = 0
+			Fz = 0
+
+		drag = 0.5*Cd[counter1]*u[counter1]*u[counter1]*mydensity*Aref #Calculating drag force
+		Yaw = (0.5*CNY*mydensity*u[counter1]*u[counter1]*Aref*momentarm) + Mz #Calculating net yaw moment
+		Pitch = (0.5*CNP*mydensity*u[counter1]*u[counter1]*Aref*momentarm) + My #Calculating net pitch moment
+		Roll = C_roll[counter1]*mydensity*u[counter1]*u[counter1]*(fin_details[2,0]*(fin_details[0,0]+fin_details[1,0]))*(1.5*mrad) #Calculating net rolling moment
+
+		vtrajectory[counter1, 0] = Xe[counter1]
+		vtrajectory[counter1, 1] = Ye[counter1]
+		vtrajectory[counter1, 2] = Ze[counter1]
+
+	#Parachute Phase
 	else:
-	    pdia = 0.95 # Parachute diameter in reefed condition
-	    if Xe[counter1] < 460: # Condition for dis reef
-		pdia = 3 # Un-reefed parachute diameter
+		pdia = 0.95 #Parachute diameter in reefed condition
+		if Xe[counter1]<460:
+			pdia = 3 #un-reefed parachute diameter
 
-	drag = (0.5 * 1.2 * math.pi * (pdia)**2 / 4) * mydensity * u[counter1]**2 * np.sign(u[counter1]) # 1.2 is parachute drag coefficient found from CFD
-	Fy = (0.5 * 0.1 * mydensity * sidey**2 * math.pi * (pdia)**2 / 4 * np.sign(sidey)) - (0.5 * 0.1 * mydensity * v[counter1]**2 * math.pi * (pdia)**2 / 4 * np.sign(v[counter1])) # 0.1 is side force coefficient value from CFD
-	Fz = (0.5 * 0.1 * mydensity * sidez**2 * math.pi * (pdia)**2 / 4 * np.sign(sidez)) - (0.5 * 0.1 * mydensity * w[counter1]**2 * math.pi * (pdia)**2 / 4 * np.sign(w[counter1]))
-	Yaw = 0
-	Pitch = 0
-	Roll = 0
-	phi[counter1] = 0
-	psi[counter1] = 0
-	theta[counter1] = 0
-	phase = 1
-	flag = 0
-"""
+			drag = (0.5*1.2*np.pi*(pdia)*(pdia)/4)*mydensity*u[counter1]*u[counter1]*np.sign(u[counter1]) # 1.2 is parachute drag coefficient found from CFD
+			Fy = (0.5*0.1*mydensity*(sidey**2)*(np.pi*(pdia)*(pdia)/4)*np.sign(sidey)) - (0.5*0.1*mydensity*(v[counter1]**2)*(np.pi*(pdia)*(pdia)/4)*np.sign(v[counter1])) # 0.1 is side force coefficient value from CFD
+			Fz = (0.5*0.1*mydensity*(sidez**2)*(np.pi*(pdia)*(pdia)/4)*np.sign(sidez)) - (0.5*0.1*mydensity*(w[counter1]**2)*(np.pi*(pdia)*(pdia)/4)*np.sign(w[counter1]))
+
+			Yaw = 0
+			Pitch = 0
+			Roll = 0
+			phi[counter1] = 0
+			psi[counter1] = 0
+			theta[counter1] = 0
+			phase = 1
+			flag = 0
+
+#RK4 Method
+	udot1,vdot1,wdot1,rdot1,qdot1,pdot1,phidot1,thetadot1,psidot1,xedot1,yedot1,zedot1 = Rk4Derivative(mythrust,drag,Fy,Fz,Mass[counter1],u[counter1],v[counter1],w[counter1],p[counter1],q[counter1],r[counter1],cphi,cpsi,ctheta,sphi,spsi,stheta,Yaw,Pitch,Roll,Ixx[counter1],Iyy[counter1],Iyy[counter1])
+	udot2,vdot2,wdot2,rdot2,qdot2,pdot2,phidot2,thetadot2,psidot2,xedot2,yedot2,zedot2 = Rk4Derivative(mythrust,drag,Fy,Fz,Mass[counter1],u[counter1]+udot1*(dt/2),v[counter1]+vdot1*(dt/2),w[counter1]+wdot1*(dt/2),p[counter1]+pdot1*(dt/2),q[counter1]+qdot1*(dt/2),r[counter1]+rdot1*(dt/2),cphi,cpsi,ctheta,sphi,spsi,stheta,Yaw,Pitch,Roll,Ixx[counter1],Iyy[counter1],Iyy[counter1])
+	udot3,vdot3,wdot3,rdot3,qdot3,pdot3,phidot3,thetadot3,psidot3,xedot3,yedot3,zedot3 = Rk4Derivative(mythrust,drag,Fy,Fz,Mass[counter1],u[counter1]+udot2*(dt/2),v[counter1]+vdot2*(dt/2),w[counter1]+wdot2*(dt/2),p[counter1]+pdot2*(dt/2),q[counter1]+qdot2*(dt/2),r[counter1]+rdot2*(dt/2),cphi,cpsi,ctheta,sphi,spsi,stheta,Yaw,Pitch,Roll,Ixx[counter1],Iyy[counter1],Iyy[counter1])
+	udot4,vdot4,wdot4,rdot4,qdot4,pdot4,phidot4,thetadot4,psidot4,xedot4,yedot4,zedot4 = Rk4Derivative(mythrust,drag,Fy,Fz,Mass[counter1],u[counter1]+udot3*(dt),v[counter1]+vdot3*(dt),w[counter1]+wdot3*(dt),p[counter1]+pdot3*(dt),q[counter1]+qdot3*(dt),r[counter1]+rdot3*(dt),cphi,cpsi,ctheta,sphi,spsi,stheta,Yaw,Pitch,Roll,Ixx[counter1],Iyy[counter1],Iyy[counter1])
+
+	u[counter1+1] = u[counter1] + (1/6)*(udot1+2*udot2+2*udot3+udot4)*dt
+	acceleration[counter1+1] = (1/6)*(udot1 + 2*udot2 + 2*udot3 + udot4)
+	v[counter1+1] = v[counter1] + (1/6)*(vdot1 + 2*vdot2 + 2*vdot3 + vdot4)*dt
+	w[counter1+1] = w[counter1] + (1/6)*(wdot1 + 2*wdot2 + 2*wdot3 + wdot4)*dt
+	r[counter1+1] = r[counter1] + (1/6)*(rdot1 + 2*rdot2 + 2*rdot3 + rdot4)*dt
+	q[counter1+1] = q[counter1] + (1/6)*(qdot1 + 2*qdot2 + 2*qdot3 + qdot4)*dt
+	p[counter1+1] = p[counter1] + (1/6)*(pdot1 + 2*pdot2 + 2*pdot3 + pdot4)*dt
+	phi[counter1+1] = phi[counter1] + (1/6)*(phidot1 + 2*phidot2 + 2*phidot3 + phidot4)*dt
+	theta[counter1+1] = theta[counter1] + (1/6)*(thetadot1 + 2*thetadot2 + 2*thetadot3 + thetadot4)*dt
+	psi[counter1+1] = psi[counter1] + (1/6)*(psidot1 + 2*psidot2 + 2*psidot3 + psidot4)*dt
+	Xe[counter1+1] = Xe[counter1] + (1/6)*(xedot1 + 2*xedot2 + 2*xedot3 + xedot4)*dt
+	Ye[counter1+1] = Ye[counter1] + (1/6)*(yedot1 + 2*yedot2 + 2*yedot3 + yedot4)*dt
+	Ze[counter1+1] = Ze[counter1] + (1/6)*(zedot1 + 2*zedot2 + 2*zedot3 + zedot4)*dt
+	velx[counter1+1] = (1/6)*(xedot1 + 2*xedot2 + 2*xedot3 + xedot4)
+	timer[counter1+1] = timer[counter1] + dt
+	counter1 = counter1 + 1
+
+	drift[counter1] = np.sqrt((Ye[counter1]**2) + (Ze[counter1]**2)) # calculating drift distance
+
+	if phase==0 and Xe[counter1]<0: #condition to take care of motor start transients.. during start value of thrust might be less than weight
+		Xe[counter1] = 0
+		u[counter1] = 0
+
+prediction[counter1] = 0
+state[counter1] = 500
+
+
 #Add MATPLOTLIB here
-"""
-This is just to test the code
-""" 
-print(rmas)
-print(rcg)
-print(AMI)
-print(TMI)
-print(mrad)
-print(rlen)
-print(fin_details)
-print(thrust)
-print(time)
+plt.plot(timer, Mass)
+plt.plot(timer, Stab_Cal)
+plt.xlabel('time(s)')
+plt.ylabel('mass(kg), stability calibers')
+plt.show()
