@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import math
+
 """
 - Main function to initialize, calculate, integrate everything and plot desired results
 - Axis System is right hand with X upwards, Y out of the screen and Z going right
@@ -229,6 +230,7 @@ while Xe[counter1] >= 0 or timer < time[0]:
 	phase = 1
 	flag = 0
 
+#Add MATPLOTLIB here
 """
 This is just to test the code
 """ 
