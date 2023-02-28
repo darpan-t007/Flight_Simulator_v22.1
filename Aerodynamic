@@ -31,3 +31,11 @@ def aerodynamic_data(data1,data2,mach,pitch,yaw,phase,flag):
     cn_alpha[:,1]=data1[1:200,12]
 
     cp[:,1]=data1[1:200,13]
+
+    #with airbrakes
+    cd_poweron[:,1,2]=data2[1:200,5]
+    cd_poweron[:,2,2]=data2[2502:2701,5]
+    cd_poweron[:,3,2]=data2[5002:5201,5]
+    cd_poweroff[:,1,2]=data2[1:200,4]
+    cd_poweroff[:,2,2]=data2[2502:2701,4]
+    cd_poweroff[:,3,2]=data2[5002:5201,4]
