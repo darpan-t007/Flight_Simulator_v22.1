@@ -1,4 +1,6 @@
 import numpy as np
+from scipy.interpolate import interp1d
+
 def predictor (aerodata, accelerationx, velocityx, displacementx, currentmass, refArea, temp):
     dt = 0.01
     accel = np.zeros(100)

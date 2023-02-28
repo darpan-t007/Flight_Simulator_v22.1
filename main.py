@@ -5,6 +5,7 @@ from density_n_temp import density_n_temp
 from Predictor import predictor
 from Thrust_Misc import thrust_n_other_things
 from side_forces import side_forces
+from turbulence_generator import turbulence_generator
 """
 - Main function to initialize, calculate, integrate everything and plot desired results
 - Axis System is right hand with X upwards, Y out of the screen and Z going right
