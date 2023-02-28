@@ -1,0 +1,33 @@
+import numpy as np
+import math as m
+#this function interpolates the data from the aerodynamic data sheets and returns the results
+def aerodynamic_data(data1,data2,mach,pitch,yaw,phase,flag):
+    m = np.arange(start = 0, stop = 1.99, step = 0.01)
+    cd_poweron = np.zeros((200,3,2))
+    cd_poweroff=np.zeros((200,3,2))
+    cn=np.zeros(200,3)
+    cn_alpha=np.zeros(200,1)
+    cp=np.zeros(200,1)
+    angle=[0,2,4]
+    mach=abs(mach)
+    pitch=abs(m.degrees(pitch))
+    yaw=abs(m.degrees(yaw))
+
+    # reading aerodynamic data
+    #mach,aoa,flag
+
+    #without airbrakes
+    cd_poweron[:,1,1]=data1[1:200,5]
+    cd_poweron[:,2,1]=data1[2502:2701,5]
+    cd_poweron[:,3,1]=data1[5002:5201,5]
+    cd_poweroff[:,1,1]=data1[1:200,4]
+    cd_poweroff[:,2,1]=data1[2502:2701,4]
+    cd_poweroff[:,3,1]=data1[5002:5201,4]
+
+    cn[:,1]=data1[1:200,9]
+    cn[:,2]=data1[2501:2700,9]
+    cn[:,3]=data1[5001:5200,9]
+
+    cn_alpha[:,1]=data1[1:200,12]
+
+    cp[:,1]=data1[1:200,13]
