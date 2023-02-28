@@ -4,6 +4,7 @@ import math
 from density_n_temp import density_n_temp
 from Predictor import predictor
 from Thrust_Misc import thrust_n_other_things
+from side_forces import side_forces
 """
 - Main function to initialize, calculate, integrate everything and plot desired results
 - Axis System is right hand with X upwards, Y out of the screen and Z going right
@@ -188,8 +189,8 @@ while Xe[counter1] >= 0 or timer < time[0]:
 	    sidez, turb_gen = turbulence_generator(counter1, turb_gen, awinz, tur_inten, dt)
 	    
 	    # calculation of disturbing side forces and moments
-	    Fy, Mz = side_forces1(sidey, CG[counter1], mydensity, mrad, rlen, fin_details)
-	    Fz, My = side_forces1(sidez, CG[counter1], mydensity, mrad, rlen, fin_details)
+	    Fy, Mz = side_forces(sidey, CG[counter1], mydensity, mrad, rlen, fin_details)
+	    Fz, My = side_forces(sidez, CG[counter1], mydensity, mrad, rlen, fin_details)
 	    
 	    # My and Mz are disturbing moment about pitch and yaw respectively
 	    Fy = Fy * np.sign(sidey) * np.cos(psi[counter1])
